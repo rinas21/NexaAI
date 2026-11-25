@@ -1,0 +1,113 @@
+# =============================================================================
+# Python FastAPI AI Service - Multi-stage Dockerfile
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Base Stage - Runtime
+# -----------------------------------------------------------------------------
+FROM python:3.12-slim AS base
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -g 1000 nexai && \
+    useradd -u 1000 -g nexai -s /bin/bash -m nexai && \
+    chown -R nexai:nexai /app
+USER nexai
+
+# -----------------------------------------------------------------------------
+# Development Stage
+# -----------------------------------------------------------------------------
+FROM python:3.12-slim AS development
+WORKDIR /app
+
+# Install system dependencies for development
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    gcc \
+    git \
+    vim \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -g 1000 nexai && \
+    useradd -u 1000 -g nexai -s /bin/bash -m nexai && \
+    chown -R nexai:nexai /app
+USER nexai
+
+# Install Python dependencies
+COPY --chown=nexai:nexai src/NexaAI.AI/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir -r requirements.txt
+
+# Install development dependencies
+RUN pip install --no-cache-dir \
+    pytest \
+    pytest-asyncio \
+    pytest-cov \
+    httpx \
+    ruff \
+    mypy \
+    pre-commit
+
+# Keep container running for hot reload
+CMD ["tail", "-f", "/dev/null"]
+
+# -----------------------------------------------------------------------------
+# Builder Stage - Install dependencies
+# -----------------------------------------------------------------------------
+FROM python:3.12-slim AS builder
+WORKDIR /app
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY src/NexaAI.AI/requirements.txt .
+COPY src/NexaAI.AI/pyproject.toml .
+
+# Create virtual environment and install dependencies
+RUN python -m venv /opt/venv && \
+    /opt/venv/bin/pip install --no-cache-dir --upgrade pip && \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
+
+# -----------------------------------------------------------------------------
+# Production Stage
+# -----------------------------------------------------------------------------
+FROM python:3.12-slim AS production
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy virtual environment from builder
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Create non-root user
+RUN groupadd -g 1000 nexai && \
+    useradd -u 1000 -g nexai -s /bin/bash -m nexai && \
+    chown -R nexai:nexai /app
+USER nexai
+
+# Copy application code
+COPY --chown=nexai:nexai src/NexaAI.AI/ .
+
+# Expose port
+EXPOSE 8000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8000/health || exit 1
+
+# Run application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]

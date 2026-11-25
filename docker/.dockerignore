@@ -1,0 +1,92 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-store
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache
+.coverage
+htmlcov
+.venv
+venv
+env
+*.egg-info
+dist
+build
+
+# .NET
+bin
+obj
+*.dll
+*.exe
+*.pdb
+*.user
+*.suo
+*.sln.docstates
+TestResults
+*.trx
+
+# Docker
+docker-compose.override.yml
+docker-compose.*.yml
+Dockerfile*
+.dockerignore
+
+# Database
+*.db
+*.sqlite
+migrations/*.sql
+
+# Temporary
+tmp
+temp
+*.tmp
+*.temp
+
+# Documentation
+docs/
+README.md
+ARCHITECTURE.md
+*.md
+
+# Scripts
+scripts/*.sh
+!scripts/ollama-init.sh
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+*.tar.gz
+*.zip
+.vscode

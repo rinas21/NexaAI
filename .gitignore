@@ -1,0 +1,71 @@
+# =============================================================================
+# Enterprise AI Assistant - Root .gitignore
+# =============================================================================
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.env
+
+# .NET build outputs
+bin/
+obj/
+TestResults/
+*.trx
+*.user
+*.suo
+*.sln.docstates
+*.dll
+*.exe
+*.pdb
+
+# Node / frontend
+node_modules/
+dist/
+.npm/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.venv/
+venv/
+env/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/
+
+# IDE & editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs & runtime data
+logs/
+*.log
+uploads/
+tmp/
+temp/
+*.tmp
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Local model data
+ollama_data/
+
+# Screenshots are tracked (placeholders in docs/screenshots/)

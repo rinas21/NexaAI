@@ -1,0 +1,7 @@
+bin/
+obj/
+logs/
+uploads/
+appsettings.Development.json
+*.user
+*.suo

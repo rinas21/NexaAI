@@ -1,0 +1,4 @@
+# Convenience wrapper so `docker compose up` works from the repository root.
+# The real definition lives in docker/docker-compose.yml.
+include:
+  - path: docker/docker-compose.yml

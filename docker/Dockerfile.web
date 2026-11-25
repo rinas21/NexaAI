@@ -1,0 +1,88 @@
+# =============================================================================
+# React + TypeScript + Vite Frontend - Multi-stage Dockerfile
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Base Stage - Node.js Runtime
+# -----------------------------------------------------------------------------
+FROM node:22-alpine AS base
+WORKDIR /app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create non-root user
+RUN addgroup -g 1000 -S nexai && \
+    adduser -u 1000 -S nexai -G nexai && \
+    chown -R nexai:nexai /app
+USER nexai
+
+# -----------------------------------------------------------------------------
+# Development Stage
+# -----------------------------------------------------------------------------
+FROM node:22-alpine AS development
+WORKDIR /app
+
+# Install development tools
+RUN apk add --no-cache dumb-init git vim
+
+# Create non-root user
+RUN addgroup -g 1000 -S nexai && \
+    adduser -u 1000 -S nexai -G nexai && \
+    chown -R nexai:nexai /app
+USER nexai
+
+# Copy package files for dependency caching
+COPY --chown=nexai:nexai src/NexaAI.Web/package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy source code
+COPY --chown=nexai:nexai src/NexaAI.Web/ .
+
+# Expose Vite dev server port
+EXPOSE 5173
+
+# Start development server with hot reload
+CMD ["dumb-init", "npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+# -----------------------------------------------------------------------------
+# Builder Stage
+# -----------------------------------------------------------------------------
+FROM node:22-alpine AS builder
+WORKDIR /app
+
+# Copy package files
+COPY src/NexaAI.Web/package*.json ./
+
+# Install all dependencies (including devDependencies)
+RUN npm ci
+
+# Copy source code
+COPY src/NexaAI.Web/ .
+
+# Build for production
+RUN npm run build
+
+# -----------------------------------------------------------------------------
+# Production Stage - Nginx
+# -----------------------------------------------------------------------------
+FROM nginx:alpine AS production
+WORKDIR /usr/share/nginx/html
+
+# Copy built assets
+COPY --from=builder /app/dist .
+
+# Copy nginx configuration
+COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost/ || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
